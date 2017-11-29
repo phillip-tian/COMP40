@@ -24,11 +24,13 @@ void mul(uint32_t a, uint32_t b, uint32_t c, uint32_t *r);
 void divid(uint32_t a, uint32_t b, uint32_t c, uint32_t *r);
 void nand(uint32_t a, uint32_t b, uint32_t c, uint32_t *r);
 void halt(Mem mem, Stack_T unmapped);
-void mapSegment(uint32_t b, uint32_t c, uint32_t *r, Mem memory, Stack_T unmapped);
+void mapSegment(uint32_t b, uint32_t c, uint32_t *r, Mem memory, 
+		Stack_T unmapped);
 void unmapSegment(uint32_t c, uint32_t *r, Mem memory, Stack_T unmapped);
 void output(uint32_t c, uint32_t *r);
 void input(uint32_t c, uint32_t *r);
-void loadprog(uint32_t b, uint32_t c, uint32_t* r, Mem memory, int* ctr, int* proglength);
+void loadprog(uint32_t b, uint32_t c, uint32_t* r, Mem memory, int* ctr, 
+	      int* proglength);
 void loadval(uint32_t a, uint32_t val, uint32_t* r);
 
 
