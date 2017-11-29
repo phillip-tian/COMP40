@@ -1,0 +1,109 @@
+NAME:
+
+- Yirong Tang (ytang05)
+- Shucheng Tian (stian01)
+
+HELP RECEIVED
+
+- We received help from TAs for general debugging tips and Noah
+  for pointing us in the right direction with regard to optimizing
+  our solution.
+
+CORRECTNESS
+
+- We have correctly implemented everything. 
+
+DEPARTURE FROM DESIGN
+
+- Instead of having two component (Memory and Segment), we only use one
+  component (Memory), because we think that even though adding one more layer
+  can make our program slightly more modular, the cost of adding one 
+  more layer of (unnecessary) abstraction is larger than the benefit of 
+  increasinging a little modularity. 
+
+ARCHITECTURE:
+
+- UM Component:
+  It is essentially a main() function that drives the program. It interacts with
+  Load Component to obtain a UArray_T of instruction, then pass the instructions
+  to run() function in VM Component. This component knows an UArray_T of 
+  instructions and nothing more.
+
+- VM Component:
+  This component acts like a real machine - it reads in instructions, manages 
+  memory, and executes instructions accordingly. It interacts with Memory
+  Component to create a memory and execute the program by interacting with the 
+  Instruction Component. This component knows the memory of the program, the
+  instruction that is unpacked, instruction unit, a stack to store unmapped 
+  segment that can later be reused to save memory.
+
+- Memory Component:
+  memory.c is able to create a Mem (an Data Structure based on Hanson 
+  Seq_T), that represents the segmented memory of the UM. It has other 
+  functionalities of creating the whole Memory, map segment, unmap segment, 
+  put value into and get value from a segment. It hides how (un)mapping 
+  segments and loading/storing segments is managed.
+
+- Load Component:
+  This component reads the binary from .um file passed in by UM component and 
+  use Bitpack to convert the binary to 32-bit word (uint32_t). It ensures the 
+  content of the given .um is properly formatted and returns an array of 
+  instructions, that can later be executed by VM Component.
+
+- Instruction Component:
+  Instruction Component contains 14 instruction functions written in the UM
+  specification. These functions will be called by the run() function
+  in the VM Component.
+
+- Diagram:
+
+         array of instruction             instruction
+    UM ----------------------------> VM <--------------> Instruction
+    ^                                ^     execution           ^
+    |                                |                         |
+    |                                |                         |
+    Load                           Memory                   Memory
+(load binary to UArray_T.      (manage memory)         (manage memory)
+ of uint32_t instructions)
+
+– Explains how long it takes your UM to execute 50 million instructions, and 
+  how you know
+
+  Our UM can execute 50 million instructions in roughly 1,42 seconds on a
+  halligan machine in Rm 120. We got this information by adding a static
+  instruction counter which is added by one every time an instruction is
+  executed. We found that ./um midmark.um executes a total of 85,070,522 
+  instructions, and it takes our UM 2.42 sec to complete midmark. Using
+  simple algebra we found the above number(2.696 sec).
+
+UNIT TEST:
+cmove.um : 	This program tests condition move by examining two registers
+ 		(one is zero and the other is not) and makes corresponding
+		moves between registers, and output both results. 
+halt.um : 	This program contains only the halt instruction, and should
+		cause no memory leaks.
+input-simple.um : This program test input and output by reading in a character
+		  from stdin and output the character immediately, which
+		  should be the same as the input.
+load_program.um : This program tests load program mapping a new segment and
+		  load that segment into $m[0]. If the load program is not
+		  successful, the program will output "no".
+nand.um : This program tests nand by doing nand to a digit twice which
+	  essentially gives back the original digit. Add that digit by 48 and
+	  print it on stdout will yield the same digit.
+print-six.um : This program tests add, multiply, and divid by doing the
+	       following calculations: (2*12/4)+48 and output the result,
+	       which should be six.
+segment.um : This program tests (un)map segment and sstore and sload in a
+	     large loop which should not cause segfault or memoryleaks. 
+
+
+HOURS SPENT ANALYZING THE ASSIGNMENT:
+3 hours
+
+HOURS SPENT PREPARING DESIGN:
+5 hours
+
+HOURS SPENT SOLVING THE PROBLEM:
+20 hours (we finished the program fast, but spend a significant amount of time
+debugging!)

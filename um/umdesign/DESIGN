@@ -1,0 +1,309 @@
+HW6 UM Preliminary Design
+Shucheng Tian - stian01
+Yirong Tang - ytang05
+
+ARCHITECTURES AND HOW THEY INTERACT:
+
+  UM Component:
+
+    um.c is the only component that client interacts with. It read the input 
+    file (a .um binary) of instructions, and load the instructions by using 
+    Loading Component into a UArray (which later lives in $m[0]), and execute 
+    the program by calling the run() function which is defines in the VM
+    Component.
+
+  VM (Virtual Machine) Component:
+
+    vm.c is the component that execute the program and stores the memory
+    segment and the registers. It has a run() function that execute the program 
+    by interacting with the Instruction Component. The segmented memory that is 
+    created during the execution of the program lives in the Virtual Machine 
+    Component. It also has a stack to store unmapped segment that can later be 
+    reused to save memory.
+
+  Loading Component:
+
+    load.c is the component that reads the binary from .um file passed in by
+    UM component and convert the binary to 32-bit word using Bitpack component
+    we wrote for Arith. It hides the secret of how these instructions are 
+    retrieved and packed, ensures the content of the given .um is properly 
+    formatted and returns an array of instructions, that can later be executed 
+    by VM Component.
+
+  Instruction Component:
+
+    Instruction Component contains 14 instruction functions written in the UM
+    specification. These functions will be called by the run() function
+    in the VM Component.
+
+  Memory Component:
+    
+    memory.c is able to create a Mem (an Data Structure based on Hanson 
+    Seq_T), that represents the segmented memory of the UM. It has other 
+    functionalities of creating the whole Memory, map segment, unmap segment, 
+    put value into and get value from a segment. It hides how (un)mapping 
+    segments and loading/storing segments is managed.
+
+  Segment Component:
+
+    segment.c is a subcomponent of Memory Component in that it provides 
+    functions for Memory Component to manage operation on each segment, 
+    including: creating freeing a segment, put a value into, get a value from 
+    a location of the segment. Each Segment is essentially an UArray_T, whose
+    length is given by Map Segment Instruction and size is 32 (uint32_t)
+
+
+ABSTRACT DATA TYPE AND DATA DECLARED:
+
+    Mem:
+    It is an ADT based on Hanson Seq_T. Its index would be the Segment ID, 
+    and its value would be a Segment (UArray_T). It lives in Virtual Machine 
+    Component, and it will be changed/modified by the run() function according 
+    to the instructions.
+        Usage:
+            Mem memory;
+    
+    Seg:
+    Seg is an ADT based on Hanson UArray_T. It can be created and 
+    modified by functions in Segment Component. It mostly lives in the Mem.
+        Usage:
+            Seg segment;
+
+    unusedID:
+    When we unmap a Segment from Mem, we want to store the index of the Mem
+    (Seq_t), so that we can reuse the element at the index to map a new Segment
+    in order to save memory. UnusedSegmentID is declare as a Stack_T, lives in
+    VM Component (Virtual Machine Component), and can be modified by Unmap
+    Segment and Map Segment Instruction.
+        Usage:
+            Stack_T unusedID;
+
+    Instructions: 
+    Array of instructions (uint32_t) will be represented as Instructions, which
+    is essentially UArray_T. Instructions is created within the Load Component,
+    and passed to VM Component (Virtual Machine Component) for execution.
+        Usage:
+            UArray_T instruction;
+
+
+
+UM Testing Plan:
+    Our test plan for our UM is to test the subcomponents first before we
+    use the code from the umlab (i.e. the emit functions) to write .um 
+    unit tests for our UM.
+    
+    Step 1: Testing Loading Component
+    For Loading Component: We plan to come up with an array of instructions
+    (32-bit word) and write a script to call the load function to read the
+    binary file containing the instructions and immediately print out those
+    instructions, so that we can make sure the loading part is functional.
+    
+    Step 2: Testing Segmented Memory Component(Segment + Memory Component)
+    To test our Segmented Memory, we have written a unit test (whose code we 
+    will submit along with our design) which contains various operations 
+    using the functions in memory.h. For example, we will test the
+    invariants of the Segmemted Memory:
+        1.  given that mem_put(memory, a, b, c)
+            mem_get(memory, a, b) == c
+        2.  machine must fail if an attempt to access unmapped
+            memory segment is made
+        3.  Unmapping/freeing segments must not cause memory leaks
+    When individual functions are debugged, we will test Loading together
+    with Segmented Memory to make sure that when we run our UM, the program
+    will be stored in $m[0] with program counter pointing to $m[0][0]
+
+    Step 3: Testing Instruction Component
+    After Segmented Memory Component is debugged, we can write a script with
+    dummy registers and dummy segmented memory and directly call all 14 
+    instructions equipped for UM. The unit test for the Instruction Component 
+    consists of both comprehensive tests on individual instructions and on 
+    combined instruction sets. For example, one test could be calculating the 
+    mean of a set of numbers, which would involve the sload, sstore, add, 
+    divide, input, and ouput instructions.
+    
+    Step 4: Testing the UM (VM + UM component) 
+    After all subcomponents are tested and debugged, we finally get to run UM
+    instructions on our UM. We will use the emit functions in the umlab.c to 
+    create a series of .um files for testing, and we will mainly focus on the
+    three aspects: 1. When given the corrected input, whether the outputs
+    (if any) are as expected and 2. When given incorrect/unexpected input, 
+    whether our UM can handle appropriately as specified in the homework 
+    instruction. There must not be any memory leaks if halt() is called at any
+    point in the program, even if there are active memory segments. The UM must
+    not rely on the client writing perfect code, but have a plan in all
+    circumstances. 
+
+
+INTERFACES:
+
+  UM Component:
+
+    /*
+     * pass FILE * into Load Component and get a Seq_t of instructions;
+     * pass Seq_t of instructions into Execute Component to execute the program
+     */
+
+        int main(int argc, char *argv[])
+
+  Virtual Machine Component:
+
+    /*
+     * the function that interacts with most of components - load and convert
+     * the instruction; execute the program. It also holds the whole memory
+     */
+
+        void run(UArray_T program)
+
+  Loading Component:
+
+    /*
+     * read in the binary file and bitpack binaries into 32-bit instruction 
+     * word, return a sequence of instructions.
+     */
+
+        UArray_T load (char* file_name)
+
+  Memory Component
+
+    typedef Seq_T Mem;
+    /* initialize the segmented memory */
+        Mem mem_init();
+
+    /* free segmented memory */ 
+        void mem_free(Mem* mem);
+
+    /* returns the length of the segmented memory */ 
+        int mem_length(Mem mem);
+
+    /* put val into the memory at [index][offset] */
+        void mem_put(Mem* mem, uint32_t index, uint32_t offset, uint32_t val);
+
+    /* get the value stored in memory at [index][offset] */
+        uint32_t mem_get(Mem* mem, uint32_t index, uint32_t offset);
+
+    /* get the instruction at [pcounter] in $m[0] */
+        uint32_t get_command(Mem* mem, uint32_t pcounter);
+
+    /* helper function for Map Segment */
+    /* return segment id for R[b] */
+        uint32_t mem_on(Mem* mem, uint32_t index, uint32_t length);
+
+    /* helper function for Unmap Segment */
+    /* return (unmapped) segment id for stack */
+        uint32_t mem_off(Mem* mem, uint32_t index);
+
+  Segment Component: 
+
+    typedef UArray_T Seg;
+    /* initialize a segment with given length */
+        Seg Seg_new(int length);
+
+    /* free segment */ 
+        void Seg_free(Seg* arr);
+
+    /* put val into a given segment at index = offset */
+        void Seg_put(Seg arr, uint32_t offset, uint32_t val);
+
+    /* get the value stored in segment at index = offset */
+        uint32_t Seg_get(Seg arr, uint32_t offset);
+
+    /* return the length of segment arr */ 
+        int Seg_length(Seg arr);
+
+  Instruction Component:
+
+    /* 
+     * 0: contional move instruction 
+     * if $r[C] != 0 then $r[A] := $r[B]
+     */
+        void cmove(uint32_t a, uint32_t b, uint32_t c, UArray_T Register)
+
+    /*
+     * 1: Segmented Load 
+     * $r[A] := $m[$r[B]][$r[C]]
+     */
+        void sload(uint32_t a, uint32_t b, uint32_t c, UArray_T Register, 
+                                                                Mem memory)
+
+    /*
+     * 2: Segmented Store 
+     * $m[$r[A]][$r[B]] := $r[C]
+     */
+        void sstore(uint32_t a, uint32_t b, uint32_t c, UArray_T Register,
+                                                                Mem memory)
+
+    /*
+     * 3: add instruction
+     * $r[A] := ($r[B] + $r[C]) mod 232
+     */
+        void add(uint32_t a, uint32_t b, uint32_t c, UArray_T Register)
+
+    /*
+     * 4: multiplication instruction 
+     * $r[A] := ($r[B] × $r[C]) mod 232
+     */
+        void mul(uint32_t a, uint32_t b, uint32_t c, UArray_T Register)
+
+    /*
+     * 5: division instruction 
+     * $r[A] := ⌊$r[B] ÷ $r[C]⌋
+     */
+        void div(uint32_t a, uint32_t b, uint32_t c, UArray_T Register)
+
+    /* 
+     * 6: Bitwise NAND instruction 
+     * $r[A] := ¬($r[B] ∧ $r[C])
+     */
+        void nand(uint32_t a, uint32_t b, uint32_t c, UArray_T Register)
+
+    /* 
+     * 7: halt instruction 
+     * Computation stops.
+     */
+        void halt(void)
+
+    /*
+     * 8: Map Segment
+     * A new segment is created with a number of words equal to the value 
+     * in $r[C]. Each word in the new segment is initialized to 0. A bit 
+     * pattern that is not all zeroes and that does not identify any currently 
+     * mapped segment is placed in r[B]. The new segment is mapped as $m[$r[B]]
+     */
+        void activate(uint32_t b, uint32_t c, UArray_T Register, Mem memory)
+
+    /*
+     * 9: Unmap Segment
+     * The segment $m[$r[C]] is unmapped. Future Map Segment instructions may 
+     * reuse the identifier $r[C].
+     */
+        void deactivate(uint32_t c, UArray_T Register, Mem memory)
+
+    /*
+     * 10: output instruction 
+     * The value in $r[C] is displayed on the I/O device immediately. Only 
+     * values from 0 to 255 are allowed.
+     */
+        void output(uint32_t c, UArray_T Register)
+
+    /* 
+     * 11: input instruction 
+     * The universal machine waits for input on the I/O device. When input 
+     * arrives, $r[C] is loaded with the input, which must be a value from 0 
+     * to 255. If the end of input has been signaled, then $r[C] is loaded 
+     * with a full 32-bit word in which every bit is 1.
+     */
+        void input(uint32_t c, UArray_T Register)
+
+    /*
+     * 12: load program instruction
+     * Segment $m[$r[B]] is duplicated, and the duplicate replaces $m[0], 
+     * which is abandoned. The program counter is set to point to $m[0][$r[C]] 
+     */
+        void loadprog(uint32_t b, uint32_t c, UArray_T Register, Mem memory)
+
+    /*
+     * 13: load value instruction
+     * Load val into $r[A] 
+     */
+        void loadval(uint32_t a, unsigned val, UArray_T Register) 
+
