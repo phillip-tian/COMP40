@@ -29,7 +29,8 @@ const int WORD_LENGTH = 4;
  *       the binary to 32-bit word using Bitpack. Ensures the content of the 
  *       given .um is properly formatted
  */
-UArray_T load(int argc, char* argv[])
+
+struct seg *load(int argc, char* argv[])
 {
         if (argc != 2) {
                 fprintf(stderr, "Usage: ./um [filename]\n");
@@ -39,9 +40,9 @@ UArray_T load(int argc, char* argv[])
         struct stat umfile;
         stat(argv[1], &umfile);
         int inst_length = umfile.st_size / WORD_LENGTH;
-        UArray_T instructions = UArray_new(inst_length, sizeof(uint32_t));
+        int *inst = malloc(inst_length * sizeof(uint32_t));
 
-        FILE* input = fopen(argv[1], "rb");
+        FILE *input = fopen(argv[1], "rb");
 
         if (input == NULL) {
                 fprintf(stderr, "Error opening file.\n");
@@ -58,9 +59,14 @@ UArray_T load(int argc, char* argv[])
                         }       
                         command = Bitpack_newu(command, 8, k, curr);
                 }
-                *((uint32_t *)UArray_at(instructions, i)) = command;
+                //*((uint32_t *)UArray_at(inst, i)) = command;
+                inst[i] = command;
         }
         fclose(input);
+        struct seg *instructions = NULL;
+        instructions = malloc(sizeof(struct seg));
+        instructions->segment = inst;
+        instructions->segment_len = inst_length;
         return instructions;
 }
 

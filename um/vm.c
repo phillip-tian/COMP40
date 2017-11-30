@@ -28,7 +28,6 @@ static int program_counter = 0;
  * returns: void
  * does: run the program
  */
-
 static inline uint64_t getr(uint64_t word, unsigned width, unsigned lsb)
 {
         return (word << (64 - lsb - width)) >> (64 - width);
@@ -36,22 +35,24 @@ static inline uint64_t getr(uint64_t word, unsigned width, unsigned lsb)
 
 static inline uint32_t mem_get_command(Mem memory, uint32_t segmentID, uint32_t offset)
 {
-        UArray_T curr = Seq_get(memory, segmentID);
-        return *((uint32_t *)UArray_at(Seq_get(memory, segmentID), offset));
+        struct seg* curr = Seq_get(memory, segmentID);
+        //return *((uint32_t *)UArray_at(Seq_get(memory, segmentID), offset));
+        return curr->segment[offset];
 }
 
-void run(UArray_T program)
+void run(struct seg *program)
 {
         /* Initialize UM */
         Mem memory = mem_init();
         Stack_T unmapped = Stack_new();
-        int program_length = UArray_length(program);
+        int program_length = program->segment_len;
         uint32_t a, b, c;
         Seq_addhi(memory, program);
         
         while (program_counter < program_length) {
                 uint32_t command = mem_get_command(memory, 0, program_counter);
                 uint32_t opcode = getr(command, 4, 28);
+                // printf("opcode = %x\n", opcode);
         	switch (opcode) {
                         case 0:
                                 a = getr(command, 3, 6);
@@ -108,7 +109,7 @@ void run(UArray_T program)
                         case 8:
                                 b = getr(command, 3, 3);
                                 c = getr(command, 3, 0);
-
+                                // printf("r[b] is %u, r[c] is %u\n", r[b], r[c]);
                                 mapSegment(b, c, r, memory, unmapped);
                                 break;
                         case 9:

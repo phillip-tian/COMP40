@@ -11,8 +11,8 @@
 #ifndef VM_INCLUDED
 #define VM_INCLUDED
 
-#include "uarray.h"
+#include "load.h"
 
-void run(UArray_T program);
+void run(struct seg *program);
 
 #endif

@@ -12,8 +12,9 @@
 #define LOAD_INCLUDED
 
 #include <stdint.h>
-#include "uarray.h"
 
-UArray_T load(int argc, char* argv[]);
+#include "seg.h"
+
+struct seg *load(int argc, char* argv[]);
 
 #endif

@@ -16,7 +16,7 @@
 #include "vm.h"
 
 int main(int argc, char *argv[]) {
-        UArray_T instruction = load(argc, argv);
+        struct seg *instruction = load(argc, argv);
         run(instruction);
         return (EXIT_SUCCESS);
 }

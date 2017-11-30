@@ -87,10 +87,15 @@ void halt(Mem memory, Stack_T unmapped)
          * program count = program_length, moving the program count to the last
          * instruction
          */
+        //printf("%d\n", mem_length(memory));
+
+        //struct seg* temp = mem_get_seg(memory,1500);
+        //printf("temp length = %d\n", temp -> segment_len);
         for(int i = 0; i < mem_length(memory); i++){
                 if (mem_get_seg(memory, i) != NULL) {
                          mem_off(memory, i);
                 }
+        //printf("%d\n",i);
         }
         Stack_free(&unmapped);
         mem_free(&memory);
@@ -104,7 +109,8 @@ void halt(Mem memory, Stack_T unmapped)
  * pattern that is not all zeroes and that does not identify any currently 
  * mapped segment is placed in r[B]. The new segment is mapped as $m[$r[B]]
  */
-void mapSegment(uint32_t b, uint32_t c, uint32_t *r, Mem memory, Stack_T unmapped)
+void mapSegment(uint32_t b, uint32_t c, uint32_t *r, Mem memory, 
+		Stack_T unmapped)
 {
         if (Stack_empty(unmapped) == 1) {
                 r[b] = mem_on(memory, mem_length(memory), r[c]);
@@ -145,10 +151,10 @@ void output(uint32_t c, uint32_t *r)
 void input(uint32_t c, uint32_t *r)
 {
         uint32_t input = getchar();
-        assert(input <= 255);
         if (input == (uint32_t)EOF) {
                input = ~0; 
         }
+	assert(input <= 255 || input == (uint32_t)EOF);
         r[c] = input;
 }
 /*
@@ -156,13 +162,14 @@ void input(uint32_t c, uint32_t *r)
  * Segment $m[$r[B]] is duplicated, and the duplicate replaces $m[0], 
  * which is abandoned. The program counter is set to point to $m[0][$r[C]] 
  */
-void loadprog(uint32_t b, uint32_t c, uint32_t* r, Mem memory, int* ctr, int* proglength)
+void loadprog(uint32_t b, uint32_t c, uint32_t* r, Mem memory, int* ctr, 
+	      int* proglength)
 {
         if (r[b] == 0) {
                 *ctr = r[c] - 1; /*to offset counter++ after switch statement*/
         } else {
                 int new_prog_len = loadprog_helper(memory, r[b]);
-		*proglength = new_prog_len;
+		        *proglength = new_prog_len;
                 *ctr = r[c] - 1;
         }
 }
